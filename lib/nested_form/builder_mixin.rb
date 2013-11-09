@@ -15,6 +15,11 @@ module NestedForm
     #
     #   <%= f.link_to_add(:tasks, :model_object => Task.new(:name => 'Task')) %>
     #
+    # If you have multiple links for adding records with different blueprints, you need to pass <tt>model_id</tt> option with a number unique for each blueprint model.
+    #
+    #   <%= f.link_to_add('Add One-off Task', :tasks, :model_object => Task.new(:name => 'Task', :repeat => 'none'), :model_id => 1) %>
+    #   <%= f.link_to_add('Add Daily Task', :tasks, :model_object => Task.new(:name => 'Task', :repeat => 'daily'), :model_id => 2) %>
+    #
     # See the README for more details on where to call this method.
     def link_to_add(*args, &block)
       options = args.extract_options!.symbolize_keys
@@ -31,14 +36,14 @@ module NestedForm
 
       options[:class] = [options[:class], "add_nested_fields"].compact.join(" ")
       options["data-association"] = association
-      options["data-blueprint-id"] = fields_blueprint_id = fields_blueprint_id_for(association)
+      options["data-blueprint-id"] = fields_blueprint_id = fields_blueprint_id_for_model(association, options.delete(:model_id))
       args << (options.delete(:href) || "javascript:void(0)")
       args << options
 
       @fields ||= {}
       @template.after_nested_form(fields_blueprint_id) do
         blueprint = {:id => fields_blueprint_id, :style => 'display: none'}
-        block, options = @fields[fields_blueprint_id].values_at(:block, :options)
+        block, options = @fields[fields_blueprint_id_for(association)].values_at(:block, :options)
         options[:child_index] = "new_#{association}"
         blueprint[:"data-blueprint"] = fields_for(association, model_object, options, &block).to_str
         @template.content_tag(:div, nil, blueprint)
@@ -107,6 +112,10 @@ module NestedForm
       assocs = object_name.to_s.scan(/(\w+)_attributes/).map(&:first)
       assocs << association
       assocs.join('_') + '_fields_blueprint'
+    end
+
+    def fields_blueprint_id_for_model(association, model_id)
+      fields_blueprint_id_for(association) + (model_id ? "_#{model_id}" : '')
     end
   end
 end

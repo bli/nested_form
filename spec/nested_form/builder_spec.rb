@@ -175,6 +175,25 @@ require "spec_helper"
           output.should match(/div.+data-blueprint="#{expected}"/)
         end
       end
+
+      context "when model_id given" do
+        before(:each) do
+          task = project.tasks.build
+          subject.fields_for(:tasks) { 'Task' }
+          subject.link_to_add('Add', :tasks, :model_id => 123)
+        end
+
+        let(:output) { template.send(:after_nested_form_callbacks) }
+
+        it "puts blueprint into data-blueprint attribute" do
+          expected = ERB::Util.html_escape '<div class="fields">Task</div>'
+          output.should match(/div.+data-blueprint="#{expected}"/)
+        end
+
+        it "adds the model id to the blueprint div id" do
+          output.should match(/div.+id="tasks_fields_blueprint_123"/)
+        end
+      end
     end
   end
 end
